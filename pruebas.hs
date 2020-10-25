@@ -14,7 +14,7 @@ import Foreign.Marshal.Unsafe
   
 main :: IO ()
 main = do
-    mainloop [] [[("como estan",["muy bien","bien","mas o menos","mal","muy mal"])],[("todo bien",["si","no"]),("como estas",["bien","mal"])]]
+    mainloop [] [[("como estan tus papas",["muy bien","bien","mas o menos","mal","muy mal"]),("como estan tus tios",["muy bien","bien","mas o menos","mal","muy mal"])],[("todo bien",["si","no"]),("como estas",["bien","mal"])]]
     
 mainloop :: [[(Int,(Int,Int))]] -> [[(String,[String])]] -> IO ()
 mainloop listaRespuestas listaIncuestas = do
@@ -29,8 +29,8 @@ mainloop listaRespuestas listaIncuestas = do
             then do
                 incuestaNumero <- escogerIncuesta
                 let tamañoIncuesta = length (listaIncuestas !! incuestaNumero)
-                nuevasRespuestas <- responderManual (tamañoIncuesta - 1) incuestaNumero listaIncuestas listaRespuestas
-                mainloop (nuevasRespuestas) (listaIncuestas)
+                nuevasRespuestas <- responderManual (tamañoIncuesta - 1) incuestaNumero listaIncuestas []
+                mainloop (listaRespuestas ++ [nuevasRespuestas]) (listaIncuestas)
         else if numero == 3
             then do
                 incuestaNumero <- escogerIncuesta
@@ -41,7 +41,12 @@ mainloop listaRespuestas listaIncuestas = do
         else if numero == 4
             then do
                 putStrLn "Las variables que se escogieron para el modulo de estadistica son las siguientes"
+                putStrLn "Variable 1 total de incustas respondidas "
                 variable1 listaRespuestas
+                putStrLn "Variable 2 total de respuestas en una incuesta especifica"
+                variable2 listaRespuestas
+                putStrLn "Variable 3..."
+                mainloop listaRespuestas listaIncuestas
         else mainloop listaRespuestas listaIncuestas 
 
 preguntass :: Int -> [(String,[String])] -> IO [(String,[String])]
@@ -83,7 +88,7 @@ respuestass n lista = do
     getRespuesta <- sRespuesta
     respuestass (n-1) (lista++[getRespuesta])
 
-responderManual :: Int -> Int -> [[(String,[String])]] -> [[(Int,(Int,Int))]] -> IO [[(Int,(Int,Int))]]
+responderManual :: Int -> Int -> [[(String,[String])]] -> [(Int,(Int,Int))] -> IO [(Int,(Int,Int))]
 responderManual (-1) n listaEncuestas listaRespuestas = return listaRespuestas
 responderManual t n lista listaRespuestas = do
     let pregunta = fst ((lista !! n) !! t)
@@ -92,30 +97,42 @@ responderManual t n lista listaRespuestas = do
     printRespuestas ((length respuestas)-1) (respuestas)
     respuesta <- getLine
     let numero = (read respuesta :: Int)
-    responderManual (t-1) (n) (lista) (listaRespuestas++[[(n,(t,numero))]])
+    responderManual (t-1) (n) (lista) (listaRespuestas++[(n,(t,numero))])
 
-auxResponderAutomatico :: Int -> Int -> [[(String,[String])]] -> [[(Int,(Int,Int))]] -> IO [[(Int,(Int,Int))]]
+auxResponderAutomatico :: Int -> Int -> [[(String,[String])]] -> [(Int,(Int,Int))] -> IO [(Int,(Int,Int))]
 auxResponderAutomatico (-1) n listaEncuestas listaRespuestas = return listaRespuestas
 auxResponderAutomatico t n lista listaRespuestas = do
     let respuestas = snd ((lista !! n) !! t)
     let respuesta = (length respuestas)-1
-    responderManual (t-1) (n) (lista) (listaRespuestas++[[(n,(t,respuesta))]])
+    auxResponderAutomatico (t-1) (n) (lista) (listaRespuestas++[(n,(t,respuesta))])
 
 responderAutomatico :: Int -> Int -> Int -> [[(String,[String])]] -> [[(Int,(Int,Int))]] -> IO [[(Int,(Int,Int))]]
 responderAutomatico 0 b c d e = return e
 responderAutomatico a b c d e = do
-    auxMandar <- auxResponderAutomatico b c d e
-    responderAutomatico (a-1) b c d auxMandar
+    auxMandar <- auxResponderAutomatico b c d []
+    responderAutomatico (a-1) b c d (e++[auxMandar])
 
 variable1 :: [[(Int,(Int,Int))]] -> IO ()
 variable1 x = do
-    let cantidadContestada = length x
-    putStr "El nuemero total de preguntas respodidas es de "
+    putStr "El nuemero total de incuestas respodidas en el programa es de "
     putStrLn (show ((length x)))
     
 variable2 :: [[(Int,(Int,Int))]] -> IO ()
-variable2 x = do
-    putStrLn "por implementar"
+variable2 lista = do
+    putStr "ingrese el numero de la incuesta "
+    accion <- getLine
+    let numero = (read accion :: Int)
+    let resultado1 =sum (map (variable2Aux 0 numero) lista)
+    putStr "La incuesta eleccionada se ha respondido una cantidad de veces igual a "
+    putStrLn (show(resultado1))
+
+variable2Aux :: Int -> Int -> [(Int,(Int,Int))] -> Int
+variable2Aux a n [] = a
+variable2Aux a n lista = do
+    let cosa = fst (lista !! 1)
+    if cosa == n
+        then variable2Aux (a+1) n []
+    else variable2Aux 0 n []
 
 imprimirMenu :: IO Int
 imprimirMenu = do
